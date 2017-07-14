@@ -36,7 +36,13 @@ ui <- fluidPage(
                    min = min(Titanicp$parch, na.rm = TRUE),
                    max = max(Titanicp$parch, na.rm = TRUE),
                    step = 1,
-                   value = 1)
+                   value = 1),
+       sliderInput("trainprop",
+                   "Training Proportion",
+                   min = 0.1,
+                   max = 1.0,
+                   step = 0.1,
+                   value = 0.1)
      ),
      mainPanel(
        textOutput("prediction"),
@@ -46,6 +52,10 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
+  generate_reactive <- reactive({
+    trainprop <- input$trainprop
+    rpart(survived ~ ., data = sample_frac(Titanicp, input$trainprop))
+  })
   output$prediction <- renderText({
     new_data = data.frame(
       pclass = input$pclass,
@@ -54,12 +64,12 @@ server <- function(input, output) {
       sibsp = input$sibsp,
       parch = input$parch
     )
-    titanic.predict <- predict(fit.titanic, new_data, type = "class")
+    titanic.predict <- predict(generate_reactive(), new_data, type = "class")
     paste("This passenger", titanic.predict, ".", sep = " ")
   })
   output$tree <- renderPlot({
-    plot(fit.titanic)
-    text(fit.titanic)
+    plot(generate_reactive())
+    text(generate_reactive())
     #fancyRpartPlot(titanic.predict)
   })
 }
